@@ -2,20 +2,20 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# --- 1. ENCODER (Image -> Features) ---
+# --- 1. ENCODER ---
 class SimpleEncoder(nn.Module):
     def __init__(self, output_dim=512):
         super().__init__()
         self.model = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, padding=1), nn.ReLU(),
-            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1), nn.ReLU(), # /2
-            nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1), nn.ReLU(), # /4
-            nn.Conv2d(256, output_dim, kernel_size=3, stride=2, padding=1), nn.ReLU() # /8
+            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1), nn.ReLU(), 
+            nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1), nn.ReLU(), 
+            nn.Conv2d(256, output_dim, kernel_size=3, stride=2, padding=1), nn.ReLU() 
         )
     def forward(self, x):
         return self.model(x)
 
-# --- 2. DECODER (Features -> Image) ---
+# --- 2. DECODER ---
 class SimpleDecoder(nn.Module):
     def __init__(self, input_dim=512):
         super().__init__()
@@ -27,8 +27,6 @@ class SimpleDecoder(nn.Module):
             nn.Upsample(scale_factor=2),
             nn.Conv2d(128, 64, kernel_size=3, padding=1), nn.ReLU(),
             nn.Conv2d(64, 3, kernel_size=3, padding=1),
-            # On ne met pas de Sigmoid ici car VGG (Loss) attend des données normalisées standard,
-            # pas forcément bornées [0,1]. Si besoin pour l'affichage, on clampera.
         )
     def forward(self, x):
         return self.model(x)
@@ -49,8 +47,6 @@ class StyleTransformerBlock(nn.Module):
         self.dropout2 = nn.Dropout(dropout)
 
     def forward(self, content_features, style_features):
-        # content_features (Query)
-        # style_features (Key, Value)
         q = content_features
         k = style_features
         v = style_features
@@ -70,7 +66,6 @@ class StyTr2(nn.Module):
     def __init__(self, embed_dim=512, nhead=8, num_layers=2):
         super().__init__()
         
-        # Initialisation de l'encoder et du decoder
         self.encoder = SimpleEncoder(embed_dim)
         self.decoder = SimpleDecoder(embed_dim)
         
@@ -79,23 +74,21 @@ class StyTr2(nn.Module):
         ])
 
     def forward(self, content_img, style_img):
-        # 1. ENCODAGE : Image [B, 3, H, W] -> Features [B, 512, H/8, W/8]
-        # C'EST L'ETAPE QUI MANQUAIT PROBABLEMENT
         c_feats = self.encoder(content_img)
         s_feats = self.encoder(style_img)
         
         b, c, h, w = c_feats.shape
         
-        # 2. PREPARATION : [B, C, H, W] -> [Sequence, Batch, Embedding]
-        content_seq = c_feats.flatten(2).permute(2, 0, 1) # [HW, B, 512]
-        style_seq = s_feats.flatten(2).permute(2, 0, 1)   # [HW, B, 512]
+        # 2. PREPARATION 
+        content_seq = c_feats.flatten(2).permute(2, 0, 1) 
+        style_seq = s_feats.flatten(2).permute(2, 0, 1) 
         
         # 3. TRANSFORMER
         output_seq = content_seq
         for layer in self.transformer_layers:
             output_seq = layer(output_seq, style_seq)
             
-        # 4. REMISE EN FORME : [Sequence, Batch, Embedding] -> [B, C, H, W]
+        # 4. REMISE EN FORME
         features_spatial = output_seq.permute(1, 2, 0).view(b, c, h, w)
         
         # 5. DECODAGE
