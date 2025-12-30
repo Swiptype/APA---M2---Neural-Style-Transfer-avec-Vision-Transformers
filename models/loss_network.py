@@ -5,19 +5,17 @@ from torchvision.models import vgg19
 class LossNetwork(nn.Module):
     def __init__(self, device):
         super().__init__()
-        # On charge VGG19 pré-entraîné sur ImageNet
         vgg = vgg19(pretrained=True).features
-        self.vgg = vgg.to(device).eval() # Mode évaluation (pas d'entraînement du VGG)
+        self.vgg = vgg.to(device).eval()
         
-        # On gèle les paramètres (on ne veut pas modifier VGG)
         for param in self.vgg.parameters():
             param.requires_grad = False
             
         # Les couches standard pour le Style Transfer
         # Style : couches superficielles (texture) + profondes (structure)
         # Content : couche profonde (structure globale)
-        self.style_layers = ['0', '5', '10', '19', '28'] # conv1_1, conv2_1...
-        self.content_layers = ['21'] # conv4_2
+        self.style_layers = ['0', '5', '10', '19', '28']
+        self.content_layers = ['21']
 
     def forward(self, x):
         features = {}
@@ -36,8 +34,8 @@ def calc_gram_matrix(input_tensor):
     """
     b, c, h, w = input_tensor.size()
     features = input_tensor.view(b, c, h * w)
-    G = torch.bmm(features, features.transpose(1, 2)) # Produit scalaire
-    return G.div(c * h * w) # Normalisation
+    G = torch.bmm(features, features.transpose(1, 2))
+    return G.div(c * h * w)
 
 def calc_loss(loss_network, generated, content_target, style_target, lambda_c=10.0, lambda_s=50.0):
     # 1. Extraction des features
