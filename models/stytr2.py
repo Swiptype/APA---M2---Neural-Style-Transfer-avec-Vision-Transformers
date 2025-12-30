@@ -27,6 +27,7 @@ class SimpleDecoder(nn.Module):
             nn.Upsample(scale_factor=2),
             nn.Conv2d(128, 64, kernel_size=3, padding=1), nn.ReLU(),
             nn.Conv2d(64, 3, kernel_size=3, padding=1),
+            nn.Sigmoid()
         )
     def forward(self, x):
         return self.model(x)
@@ -61,7 +62,7 @@ class StyleTransformerBlock(nn.Module):
         
         return src
 
-# --- 4. MODELE GLOBAL (StyTr2) ---
+# --- 4. MODELE GLOBAL ---
 class StyTr2(nn.Module):
     def __init__(self, embed_dim=512, nhead=8, num_layers=2):
         super().__init__()
@@ -78,10 +79,8 @@ class StyTr2(nn.Module):
         s_feats = self.encoder(style_img)
         
         b, c, h, w = c_feats.shape
-        
-        # 2. PREPARATION 
-        content_seq = c_feats.flatten(2).permute(2, 0, 1) 
-        style_seq = s_feats.flatten(2).permute(2, 0, 1) 
+        content_seq = c_feats.flatten(2).permute(2, 0, 1)
+        style_seq = s_feats.flatten(2).permute(2, 0, 1)   
         
         # 3. TRANSFORMER
         output_seq = content_seq
