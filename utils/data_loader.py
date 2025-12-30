@@ -15,15 +15,13 @@ class ContentStyleDataset(Dataset):
         
         # Pipeline de transformation (Essentiel !)
         self.transform = transforms.Compose([
-            transforms.Resize((image_size, image_size)), # Redimensionnement forcé
-            transforms.ToTensor(),                       # Conversion [0, 1]
-            # Normalisation standard ImageNet (souvent utilisée pour VGG)
+            transforms.Resize((image_size, image_size)),
+            transforms.ToTensor(),                       
             transforms.Normalize(mean=[0.485, 0.456, 0.406], 
                                  std=[0.229, 0.224, 0.225])
         ])
 
     def __len__(self):
-        # On se base sur la longueur du dataset de contenu (COCO est plus grand)
         return len(self.content_images)
 
     def __getitem__(self, idx):
@@ -32,7 +30,6 @@ class ContentStyleDataset(Dataset):
         content_img = Image.open(content_path).convert('RGB')
         
         # 2. Charger une image de Style (aléatoire)
-        # On veut voir différents styles pour le même contenu au fil des époques
         style_name = random.choice(self.style_images)
         style_path = os.path.join(self.style_dir, style_name)
         style_img = Image.open(style_path).convert('RGB')
