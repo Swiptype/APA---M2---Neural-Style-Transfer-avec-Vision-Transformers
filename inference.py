@@ -18,7 +18,6 @@ def stylize_image(content_path, style_path, model_path, output_path="output.jpg"
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     
-    # Inverse transform pour sauvegarder l'image (dé-normalisation)
     def denorm(tensor):
         mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1).to(DEVICE)
         std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1).to(DEVICE)
@@ -36,5 +35,4 @@ def stylize_image(content_path, style_path, model_path, output_path="output.jpg"
     transforms.ToPILImage()(result_tensor).save(output_path)
     print(f"Image stylisée sauvegardée : {output_path}")
 
-# Exemple
-# stylize_image("ma_photo.jpg", "van_gogh.jpg", "stytr2_epoch_5.pth")
+stylize_image("content.jpg", "style.jpg", "stytr2_epoch_1.pth", "resultat_final0.jpg")
